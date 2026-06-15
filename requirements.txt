@@ -1,0 +1,7 @@
+Django==5.2.15
+mysqlclient          # 或 PyMySQL（需额外配置）
+redis==5.0.1
+django-redis==5.4.0
+djangorestframework  # 如果使用 DRF 开发 JSON 接口
+requests             # 安全基线检查可能需要调用系统命令
+paramiko             # 若通过 SSH 连接被管服务器

@@ -1,0 +1,863 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>运维管理系统</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/echarts@5.5.0/dist/echarts.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background-color: #f4f6f9;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        /* 侧边栏样式 */
+        .sidebar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            height: 100%;
+            width: 260px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            transition: all 0.3s;
+            z-index: 1000;
+            box-shadow: 2px 0 10px rgba(0,0,0,0.1);
+        }
+
+        .sidebar-header {
+            padding: 25px 20px;
+            text-align: center;
+            border-bottom: 1px solid rgba(255,255,255,0.2);
+        }
+
+        .sidebar-header h3 {
+            margin: 0;
+            font-size: 1.5rem;
+        }
+
+        .sidebar-header p {
+            font-size: 0.75rem;
+            opacity: 0.8;
+            margin-top: 8px;
+        }
+
+        .sidebar-menu {
+            padding: 20px 0;
+        }
+
+        .menu-item {
+            padding: 12px 25px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            color: white;
+            text-decoration: none;
+            transition: all 0.3s;
+            cursor: pointer;
+        }
+
+        .menu-item:hover {
+            background-color: rgba(255,255,255,0.2);
+            padding-left: 30px;
+        }
+
+        .menu-item.active {
+            background-color: rgba(255,255,255,0.3);
+            border-left: 4px solid white;
+        }
+
+        .menu-item i {
+            width: 24px;
+            font-size: 1.2rem;
+        }
+
+        /* 主内容区域 */
+        .main-content {
+            margin-left: 260px;
+            padding: 20px;
+            min-height: 100vh;
+        }
+
+        /* 卡片样式 */
+        .card {
+            border: none;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            margin-bottom: 25px;
+        }
+
+        .card-header {
+            background: white;
+            border-bottom: 1px solid #eee;
+            padding: 18px 25px;
+            font-weight: 600;
+            border-radius: 12px 12px 0 0 !important;
+        }
+
+        /* 表格样式 */
+        .server-table {
+            background: white;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        }
+
+        .server-table table {
+            margin-bottom: 0;
+        }
+
+        .server-table th {
+            background-color: #f8f9fc;
+            border-bottom: 2px solid #e9ecef;
+            padding: 15px;
+            font-weight: 600;
+            color: #495057;
+        }
+
+        .server-table td {
+            padding: 12px 15px;
+            vertical-align: middle;
+            border-bottom: 1px solid #eee;
+        }
+
+        .server-table tr:hover {
+            background-color: #f8f9fc;
+        }
+
+        /* 状态标签 */
+        .badge-active {
+            background-color: #28a745;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            color: white;
+        }
+
+        .badge-inactive {
+            background-color: #dc3545;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            color: white;
+        }
+
+        .badge-pass {
+            background-color: #28a745;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            color: white;
+        }
+
+        .badge-fail {
+            background-color: #dc3545;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            color: white;
+        }
+
+        .badge-warning {
+            background-color: #ffc107;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            color: #333;
+        }
+
+        .badge-critical {
+            background-color: #dc3545;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            color: white;
+        }
+
+        .badge-resolved {
+            background-color: #28a745;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            color: white;
+        }
+
+        .badge-pending {
+            background-color: #ffc107;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            color: #333;
+        }
+
+        /* 按钮样式 */
+        .btn-sm {
+            padding: 4px 12px;
+            font-size: 0.75rem;
+            margin: 0 2px;
+        }
+
+        /* 分页样式 */
+        .pagination {
+            margin: 20px 0 0;
+            justify-content: flex-end;
+        }
+
+        .pagination .page-link {
+            color: #667eea;
+            border-radius: 8px;
+            margin: 0 3px;
+        }
+
+        .pagination .active .page-link {
+            background-color: #667eea;
+            border-color: #667eea;
+            color: white;
+        }
+
+        /* 添加服务器按钮 */
+        .btn-add {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: none;
+            padding: 8px 20px;
+            border-radius: 8px;
+            color: white;
+        }
+
+        .btn-add:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(102,126,234,0.4);
+        }
+
+        /* 搜索框 */
+        .search-box {
+            position: relative;
+            width: 300px;
+        }
+
+        .search-box input {
+            padding-left: 35px;
+            border-radius: 20px;
+            border: 1px solid #ddd;
+        }
+
+        .search-box i {
+            position: absolute;
+            left: 12px;
+            top: 10px;
+            color: #999;
+        }
+
+        /* 监控大屏样式 */
+        .stat-card {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            text-align: center;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            transition: transform 0.2s;
+        }
+        .stat-card:hover { transform: translateY(-5px); }
+        .stat-value { font-size: 2rem; font-weight: bold; }
+        .stat-label { color: #666; font-size: 0.85rem; margin-top: 8px; }
+        .stat-cpu { color: #667eea; }
+        .stat-mem { color: #28a745; }
+        .chart-container { height: 400px; width: 100%; }
+        .server-select { max-width: 400px; }
+
+        /* 基线检查样式 */
+        .summary-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-radius: 12px;
+            padding: 20px;
+            text-align: center;
+        }
+        .summary-number {
+            font-size: 2.5rem;
+            font-weight: bold;
+        }
+        .check-item-pass {
+            border-left: 4px solid #28a745;
+        }
+        .check-item-fail {
+            border-left: 4px solid #dc3545;
+        }
+
+        /* 告警记录样式 */
+        .alert-card {
+            background: white;
+            border-radius: 12px;
+            padding: 15px;
+            margin-bottom: 12px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            transition: all 0.2s;
+        }
+        .alert-card:hover {
+            transform: translateX(5px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+        .alert-card.critical { border-left: 4px solid #dc3545; }
+        .alert-card.warning { border-left: 4px solid #ffc107; }
+        .alert-card.resolved { opacity: 0.7; border-left: 4px solid #28a745; }
+        .filter-bar {
+            background: white;
+            border-radius: 12px;
+            padding: 15px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        }
+    </style>
+</head>
+<body>
+    <!-- 侧边导航栏 -->
+    <div class="sidebar">
+        <div class="sidebar-header">
+            <h3><i class="fas fa-server"></i> 运维系统</h3>
+            <p>Operation Management System</p>
+        </div>
+        <div class="sidebar-menu">
+            <a class="menu-item" onclick="showPage('servers')">
+                <i class="fas fa-tachometer-alt"></i>
+                <span>服务器管理</span>
+            </a>
+            <a class="menu-item" onclick="showPage('monitor')">
+                <i class="fas fa-chart-line"></i>
+                <span>监控大屏</span>
+            </a>
+            <a class="menu-item" onclick="showPage('baseline')">
+                <i class="fas fa-shield-alt"></i>
+                <span>基线检查</span>
+            </a>
+            <a class="menu-item" onclick="showPage('alert')">
+                <i class="fas fa-bell"></i>
+                <span>告警记录</span>
+            </a>
+        </div>
+    </div>
+
+    <!-- 主内容（无头部） -->
+    <div class="main-content">
+        <!-- ==================== 服务器管理页面 ==================== -->
+        <div id="serversPage">
+            <div class="card">
+                <div class="card-header">
+                    <i class="fas fa-plus-circle me-2"></i>添加新服务器
+                </div>
+                <div class="card-body">
+                    <form id="addServerForm">
+                        <div class="row g-3">
+                            <div class="col-md-2">
+                                <label class="form-label small text-muted">主机名</label>
+                                <input type="text" class="form-control" id="hostname" placeholder="web-server-01" required>
+                            </div>
+                            <div class="col-md-2">
+                                <label class="form-label small text-muted">IP地址</label>
+                                <input type="text" class="form-control" id="ip_address" placeholder="192.168.1.100" required>
+                            </div>
+                            <div class="col-md-1">
+                                <label class="form-label small text-muted">SSH端口</label>
+                                <input type="number" class="form-control" id="ssh_port" value="22">
+                            </div>
+                            <div class="col-md-2">
+                                <label class="form-label small text-muted">SSH用户</label>
+                                <input type="text" class="form-control" id="ssh_user" value="root">
+                            </div>
+                            <div class="col-md-2">
+                                <label class="form-label small text-muted">SSH密码</label>
+                                <input type="password" class="form-control" id="ssh_password" required>
+                            </div>
+                            <div class="col-md-3 d-flex align-items-end">
+                                <button type="submit" class="btn btn-add w-100">
+                                    <i class="fas fa-save me-1"></i>添加服务器
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <div class="server-table">
+                <div class="p-3 bg-white border-bottom d-flex justify-content-between align-items-center">
+                    <div>
+                        <i class="fas fa-list me-2"></i>服务器列表
+                        <span class="badge bg-secondary ms-2" id="serverCount">0</span>
+                    </div>
+                    <div class="search-box">
+                        <i class="fas fa-search"></i>
+                        <input type="text" class="form-control" id="searchKeyword" placeholder="搜索主机名或IP...">
+                    </div>
+                </div>
+                
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr><th>ID</th><th>主机名</th><th>IP地址</th><th>SSH</th><th>系统版本</th><th>CPU核心</th><th>内存(GB)</th><th>磁盘(GB)</th><th>状态</th><th>操作</th></tr>
+                        </thead>
+                        <tbody id="serverTableBody"><tr><td colspan="10" class="text-center py-5"><div class="spinner-border text-primary"></div></td></tr></tbody>
+                    </table>
+                </div>
+                <div class="p-3 bg-white border-top"><nav><ul class="pagination mb-0" id="paginationList"></ul></nav></div>
+            </div>
+        </div>
+
+        <!-- ==================== 监控大屏页面 ==================== -->
+        <div id="monitorPage" style="display: none;">
+            <div class="card">
+                <div class="card-header"><i class="fas fa-chart-line me-2"></i>选择监控服务器</div>
+                <div class="card-body">
+                    <select class="form-select server-select" id="serverSelect" onchange="loadMonitorData()">
+                        <option value="">-- 请选择服务器 --</option>
+                    </select>
+                </div>
+            </div>
+            <div class="row mb-4" id="statCards" style="display: none;">
+                <div class="col-md-3"><div class="stat-card"><div class="stat-value stat-cpu" id="avgCpu">--</div><div class="stat-label">平均CPU使用率</div></div></div>
+                <div class="col-md-3"><div class="stat-card"><div class="stat-value stat-cpu" id="maxCpu">--</div><div class="stat-label">最高CPU使用率</div></div></div>
+                <div class="col-md-3"><div class="stat-card"><div class="stat-value stat-mem" id="avgMem">--</div><div class="stat-label">平均内存使用率</div></div></div>
+                <div class="col-md-3"><div class="stat-card"><div class="stat-value stat-mem" id="maxMem">--</div><div class="stat-label">最高内存使用率</div></div></div>
+            </div>
+            <div class="card" id="chartCard" style="display: none;">
+                <div class="card-header"><i class="fas fa-chart-area me-2"></i>CPU / 内存使用率趋势（最近7天）</div>
+                <div class="card-body"><div id="cpuChart" class="chart-container"></div></div>
+            </div>
+        </div>
+
+        <!-- ==================== 基线检查页面 ==================== -->
+        <div id="baselinePage" style="display: none;">
+            <div class="card">
+                <div class="card-header"><i class="fas fa-shield-alt me-2"></i>选择检查服务器</div>
+                <div class="card-body">
+                    <div class="row align-items-end">
+                        <div class="col-md-4">
+                            <select class="form-select" id="baselineServerSelect"><option value="">-- 请选择服务器 --</option></select>
+                        </div>
+                        <div class="col-md-3">
+                            <button class="btn btn-primary" onclick="runBaselineCheck()"><i class="fas fa-play me-1"></i>开始基线检查</button>
+                        </div>
+                        <div class="col-md-5">
+                            <button class="btn btn-outline-secondary" onclick="loadBaselineHistory()"><i class="fas fa-history me-1"></i>查看历史记录</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div id="baselineResult" style="display: none;">
+                <div class="row mb-4">
+                    <div class="col-md-3"><div class="summary-card"><div class="summary-number" id="totalChecks">0</div><div>检查项总数</div></div></div>
+                    <div class="col-md-3"><div class="summary-card" style="background: linear-gradient(135deg, #28a745, #20c997);"><div class="summary-number" id="passedChecks">0</div><div>通过项</div></div></div>
+                    <div class="col-md-3"><div class="summary-card" style="background: linear-gradient(135deg, #dc3545, #e83e8c);"><div class="summary-number" id="failedChecks">0</div><div>不通过项</div></div></div>
+                    <div class="col-md-3"><div class="summary-card" style="background: linear-gradient(135deg, #17a2b8, #6f42c1);"><div class="summary-number" id="passRate">0%</div><div>通过率</div></div></div>
+                </div>
+                <div class="card">
+                    <div class="card-header"><i class="fas fa-list-check me-2"></i>检查详情<span class="badge bg-secondary ms-2" id="checkTime"></span></div>
+                    <div class="card-body"><div id="checkItemsList"></div></div>
+                </div>
+            </div>
+            <div class="card mt-4" id="historySection" style="display: none;">
+                <div class="card-header"><i class="fas fa-history me-2"></i>历史检查记录</div>
+                <div class="card-body"><div class="table-responsive"><table class="table table-hover"><thead><tr><th>检查时间</th><th>通过率</th><th>详情</th></tr></thead><tbody id="historyList"></tbody></table></div></div>
+            </div>
+        </div>
+
+        <!-- ==================== 告警记录页面 ==================== -->
+        <div id="alertPage" style="display: none;">
+            <!-- 统计卡片 -->
+            <div class="row mb-4" id="alertStats" style="display: none;">
+                <div class="col-md-3">
+                    <div class="summary-card" style="background: linear-gradient(135deg, #ffc107, #fd7e14);">
+                        <div class="summary-number" id="alertTotal">0</div>
+                        <div>总告警数</div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="summary-card" style="background: linear-gradient(135deg, #dc3545, #e83e8c);">
+                        <div class="summary-number" id="alertPending">0</div>
+                        <div>未恢复告警</div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="summary-card" style="background: linear-gradient(135deg, #28a745, #20c997);">
+                        <div class="summary-number" id="alertResolved">0</div>
+                        <div>已恢复告警</div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="summary-card" style="background: linear-gradient(135deg, #17a2b8, #6f42c1);">
+                        <div class="summary-number" id="alertRate">0%</div>
+                        <div>恢复率</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 过滤栏 -->
+            <div class="filter-bar">
+                <div class="row align-items-center">
+                    <div class="col-md-3">
+                        <select class="form-select" id="alertServerFilter" onchange="loadAlerts()">
+                            <option value="">全部服务器</option>
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <select class="form-select" id="alertStatusFilter" onchange="loadAlerts()">
+                            <option value="">全部状态</option>
+                            <option value="false">未恢复</option>
+                            <option value="true">已恢复</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <select class="form-select" id="alertTypeFilter" onchange="loadAlerts()">
+                            <option value="">全部类型</option>
+                            <option value="cpu_high">CPU过高</option>
+                            <option value="memory_high">内存过高</option>
+                            <option value="baseline_fail">基线失败</option>
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <button class="btn btn-outline-primary w-100" onclick="loadAlerts()">
+                            <i class="fas fa-search me-1"></i>查询
+                        </button>
+                    </div>
+                    <div class="col-md-2">
+                        <button class="btn btn-outline-secondary w-100" onclick="refreshAlerts()">
+                            <i class="fas fa-sync-alt me-1"></i>刷新
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 告警列表 -->
+            <div class="card">
+                <div class="card-header">
+                    <i class="fas fa-bell me-2"></i>告警记录列表
+                    <span class="badge bg-secondary ms-2" id="alertListCount">0</span>
+                </div>
+                <div class="card-body">
+                    <div id="alertList">
+                        <div class="text-center py-5">
+                            <div class="spinner-border text-primary"></div>
+                            <p class="mt-2">加载中...</p>
+                        </div>
+                    </div>
+                    <!-- 分页 -->
+                    <div class="mt-3" id="alertPagination">
+                        <nav><ul class="pagination justify-content-end" id="alertPaginationList"></ul></nav>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ==================== 全局变量 ====================
+        let currentPage = 1;
+        let pageSize = 30;
+        let totalServers = 0;
+        let allServers = [];
+        let cpuChart = null;
+        let alertCurrentPage = 1;
+        let alertTotalPages = 1;
+
+        // ==================== 页面切换 ====================
+        function showPage(page) {
+            document.getElementById('serversPage').style.display = page === 'servers' ? 'block' : 'none';
+            document.getElementById('monitorPage').style.display = page === 'monitor' ? 'block' : 'none';
+            document.getElementById('baselinePage').style.display = page === 'baseline' ? 'block' : 'none';
+            document.getElementById('alertPage').style.display = page === 'alert' ? 'block' : 'none';
+            
+            const menuItems = document.querySelectorAll('.menu-item');
+            menuItems.forEach((item, idx) => { item.classList.remove('active'); });
+            
+            if (page === 'servers') {
+                menuItems[0].classList.add('active');
+                loadServers();
+            } else if (page === 'monitor') {
+                menuItems[1].classList.add('active');
+                loadServerListForMonitor();
+            } else if (page === 'baseline') {
+                menuItems[2].classList.add('active');
+                loadBaselineServerList();
+            } else if (page === 'alert') {
+                menuItems[3].classList.add('active');
+                loadAlertServerFilter();
+                loadAlerts();
+            }
+        }
+
+        // ==================== 监控大屏功能 ====================
+        function loadServerListForMonitor() {
+            fetch('/api/servers/').then(res => res.json()).then(data => {
+                if (data.code === 200) {
+                    const select = document.getElementById('serverSelect');
+                    select.innerHTML = '<option value="">-- 请选择服务器 --</option>';
+                    data.data.forEach(s => { select.innerHTML += `<option value="${s.id}">${s.hostname} (${s.ip_address})</option>`; });
+                }
+            });
+        }
+
+        function loadMonitorData() {
+            const serverId = document.getElementById('serverSelect').value;
+            if (!serverId) {
+                document.getElementById('statCards').style.display = 'none';
+                document.getElementById('chartCard').style.display = 'none';
+                return;
+            }
+            document.getElementById('avgCpu').innerHTML = '<div class="spinner-border spinner-border-sm"></div>';
+            fetch(`/api/metrics/${serverId}/?days=7&page=1&page_size=1000`).then(res => res.json()).then(data => {
+                if (data.code === 200) {
+                    document.getElementById('statCards').style.display = 'flex';
+                    document.getElementById('chartCard').style.display = 'block';
+                    document.getElementById('avgCpu').innerHTML = data.data.statistics.cpu_avg + '%';
+                    document.getElementById('maxCpu').innerHTML = data.data.statistics.cpu_max + '%';
+                    document.getElementById('avgMem').innerHTML = data.data.statistics.memory_avg + '%';
+                    document.getElementById('maxMem').innerHTML = data.data.statistics.memory_max + '%';
+                    renderChart(data.data.records);
+                }
+            });
+        }
+
+        function renderChart(records) {
+            if (!cpuChart) cpuChart = echarts.init(document.getElementById('cpuChart'));
+            if (!records || records.length === 0) { cpuChart.setOption({ title: { text: '暂无数据' } }); return; }
+            const chartData = [...records].reverse();
+            const times = chartData.map(r => r.time.substring(5, 16));
+            const cpuData = chartData.map(r => r.cpu);
+            const memData = chartData.map(r => r.memory);
+            cpuChart.setOption({
+                tooltip: { trigger: 'axis' },
+                legend: { data: ['CPU使用率(%)', '内存使用率(%)'] },
+                xAxis: { type: 'category', data: times, axisLabel: { rotate: 45 } },
+                yAxis: { type: 'value', name: '使用率(%)', min: 0, max: 100 },
+                series: [{ name: 'CPU使用率(%)', type: 'line', data: cpuData, smooth: true, lineStyle: { color: '#667eea' }, areaStyle: { opacity: 0.1 } },
+                         { name: '内存使用率(%)', type: 'line', data: memData, smooth: true, lineStyle: { color: '#28a745' }, areaStyle: { opacity: 0.1 } }]
+            });
+        }
+
+        // ==================== 基线检查功能 ====================
+        function loadBaselineServerList() {
+            fetch('/api/servers/').then(res => res.json()).then(data => {
+                if (data.code === 200) {
+                    const select = document.getElementById('baselineServerSelect');
+                    select.innerHTML = '<option value="">-- 请选择服务器 --</option>';
+                    data.data.forEach(s => { select.innerHTML += `<option value="${s.id}">${s.hostname} (${s.ip_address})</option>`; });
+                }
+            });
+        }
+
+        function runBaselineCheck() {
+            const serverId = document.getElementById('baselineServerSelect').value;
+            if (!serverId) { alert('请先选择服务器'); return; }
+            document.getElementById('baselineResult').style.display = 'block';
+            document.getElementById('checkItemsList').innerHTML = '<div class="text-center py-5"><div class="spinner-border text-primary"></div><p>正在执行基线检查...</p></div>';
+            fetch(`/api/servers/${serverId}/baseline/`, { method: 'POST' }).then(res => res.json()).then(data => {
+                if (data.code === 200) { displayBaselineResult(data.data); } 
+                else { document.getElementById('checkItemsList').innerHTML = `<div class="alert alert-danger">检查失败: ${data.message}</div>`; }
+            });
+        }
+
+        function displayBaselineResult(result) {
+            const results = result.results;
+            const passed = results.filter(r => r.is_pass).length;
+            const failed = results.filter(r => !r.is_pass).length;
+            document.getElementById('totalChecks').innerText = results.length;
+            document.getElementById('passedChecks').innerText = passed;
+            document.getElementById('failedChecks').innerText = failed;
+            document.getElementById('passRate').innerText = Math.round((passed / results.length) * 100) + '%';
+            document.getElementById('checkTime').innerText = result.check_time;
+            let html = '<div class="list-group">';
+            results.forEach(r => {
+                html += `<div class="list-group-item ${r.is_pass ? 'check-item-pass' : 'check-item-fail'}" style="border-left-width: 4px;">
+                            <div class="d-flex justify-content-between"><div><strong>${r.is_pass ? '✅' : '❌'} ${r.check_item}</strong><p class="mb-0 text-muted small">${escapeHtml(r.detail)}</p></div>
+                            <span class="badge ${r.is_pass ? 'badge-pass' : 'badge-fail'}">${r.is_pass ? '通过' : '不通过'}</span></div></div>`;
+            });
+            html += '</div>';
+            document.getElementById('checkItemsList').innerHTML = html;
+            loadBaselineHistory();
+        }
+
+        function loadBaselineHistory() {
+            const serverId = document.getElementById('baselineServerSelect').value;
+            if (!serverId) return;
+            fetch(`/api/servers/${serverId}/baseline/history/`).then(res => res.json()).then(data => {
+                if (data.code === 200 && data.data.length > 0) {
+                    document.getElementById('historySection').style.display = 'block';
+                    let html = '';
+                    data.data.forEach(item => {
+                        const passRate = Math.round((item.passed / item.total) * 100);
+                        html += `<tr><td>${item.checked_at}</td><td><span class="badge ${passRate >= 80 ? 'bg-success' : 'bg-warning'}">${passRate}%</span></td><td>通过 ${item.passed}/${item.total}</td></tr>`;
+                    });
+                    document.getElementById('historyList').innerHTML = html;
+                } else { document.getElementById('historySection').style.display = 'none'; }
+            });
+        }
+
+        // ==================== 告警记录功能 ====================
+        function loadAlertServerFilter() {
+            fetch('/api/servers/').then(res => res.json()).then(data => {
+                if (data.code === 200) {
+                    const select = document.getElementById('alertServerFilter');
+                    data.data.forEach(s => { select.innerHTML += `<option value="${s.id}">${s.hostname}</option>`; });
+                }
+            });
+        }
+
+        function loadAlerts() {
+            const serverId = document.getElementById('alertServerFilter').value;
+            const resolved = document.getElementById('alertStatusFilter').value;
+            const alertType = document.getElementById('alertTypeFilter').value;
+            
+            let url = `/api/alerts/?page=${alertCurrentPage}&page_size=20`;
+            if (serverId) url += `&server_id=${serverId}`;
+            if (resolved !== '') url += `&resolved=${resolved}`;
+            if (alertType) url += `&alert_type=${alertType}`;
+            
+            fetch(url).then(res => res.json()).then(data => {
+                if (data.code === 200) {
+                    displayAlerts(data.data);
+                    document.getElementById('alertStats').style.display = 'flex';
+                }
+            });
+        }
+
+        function displayAlerts(data) {
+            const records = data.records;
+            const pagination = data.pagination;
+            
+            // 统计
+            const total = pagination.total_records;
+            const pending = records.filter(r => !r.is_resolved).length;
+            const resolved = records.filter(r => r.is_resolved).length;
+            const rate = total > 0 ? Math.round((resolved / total) * 100) : 0;
+            
+            document.getElementById('alertTotal').innerText = total;
+            document.getElementById('alertPending').innerText = pending;
+            document.getElementById('alertResolved').innerText = resolved;
+            document.getElementById('alertRate').innerText = rate + '%';
+            document.getElementById('alertListCount').innerText = records.length;
+            
+            if (records.length === 0) {
+                document.getElementById('alertList').innerHTML = '<div class="text-center py-5 text-muted">暂无告警记录</div>';
+                return;
+            }
+            
+            let html = '';
+            records.forEach(alert => {
+                const severityClass = alert.severity === 'critical' ? 'critical' : 'warning';
+                const resolvedClass = alert.is_resolved ? 'resolved' : '';
+                const statusBadge = alert.is_resolved ? '<span class="badge-resolved">已恢复</span>' : '<span class="badge-pending">未恢复</span>';
+                const typeName = { 'cpu_high': '🔥 CPU过高', 'memory_high': '💾 内存过高', 'baseline_fail': '🛡️ 基线失败' }[alert.alert_type] || alert.alert_type;
+                
+                html += `
+                    <div class="alert-card ${severityClass} ${resolvedClass}">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <div>
+                                <div class="mb-1">
+                                    <strong>${typeName}</strong>
+                                    ${statusBadge}
+                                </div>
+                                <div class="text-muted small">服务器: <strong>${escapeHtml(alert.server_name)}</strong></div>
+                                <div class="text-muted small mt-1">${escapeHtml(alert.detail)}</div>
+                            </div>
+                            <div class="text-end">
+                                <div class="small text-muted">${alert.created_at}</div>
+                                ${alert.is_resolved && alert.resolved_at ? `<div class="small text-success mt-1">恢复: ${alert.resolved_at}</div>` : ''}
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+            document.getElementById('alertList').innerHTML = html;
+            
+            // 分页
+            alertTotalPages = pagination.total_pages;
+            let pageHtml = '';
+            if (alertCurrentPage > 1) pageHtml += `<li class="page-item"><a class="page-link" href="#" onclick="changeAlertPage(${alertCurrentPage-1})">上一页</a></li>`;
+            for (let i = 1; i <= Math.min(alertTotalPages, 5); i++) {
+                pageHtml += `<li class="page-item ${alertCurrentPage === i ? 'active' : ''}"><a class="page-link" href="#" onclick="changeAlertPage(${i})">${i}</a></li>`;
+            }
+            if (alertCurrentPage < alertTotalPages) pageHtml += `<li class="page-item"><a class="page-link" href="#" onclick="changeAlertPage(${alertCurrentPage+1})">下一页</a></li>`;
+            document.getElementById('alertPaginationList').innerHTML = pageHtml;
+        }
+
+        function changeAlertPage(page) {
+            alertCurrentPage = page;
+            loadAlerts();
+        }
+
+        function refreshAlerts() {
+            alertCurrentPage = 1;
+            loadAlerts();
+        }
+
+        // ==================== 服务器管理功能 ====================
+        function loadServers() {
+            const keyword = document.getElementById('searchKeyword').value;
+            fetch(`/api/servers/?keyword=${encodeURIComponent(keyword)}`).then(res => res.json()).then(data => {
+                if (data.code === 200) {
+                    allServers = data.data;
+                    totalServers = allServers.length;
+                    document.getElementById('serverCount').innerText = totalServers;
+                    renderTable();
+                    renderPagination();
+                }
+            });
+        }
+        
+        function renderTable() {
+            const start = (currentPage - 1) * pageSize;
+            const pageServers = allServers.slice(start, start + pageSize);
+            let html = '';
+            pageServers.forEach(s => {
+                html += `<tr><td>${s.id}</td><td><strong>${escapeHtml(s.hostname)}</strong></td><td><code>${s.ip_address}</code></td><td>${s.ssh_user}@${s.ssh_port}</td>
+                        <td>${escapeHtml(s.os_version)}</td><td>${s.cpu_cores !== '未采集' ? s.cpu_cores : '-'}</td><td>${s.memory_total_gb !== '未采集' ? s.memory_total_gb : '-'}</td>
+                        <td>${s.disk_total_gb !== '未采集' ? s.disk_total_gb : '-'}</td><td><span class="${s.status === 'active' ? 'badge-active' : 'badge-inactive'}">${s.status === 'active' ? '启用' : '停用'}</span></td>
+                        <td><button class="btn btn-sm btn-outline-info" onclick="refreshServer(${s.id})"><i class="fas fa-sync-alt"></i></button>
+                        <button class="btn btn-sm btn-outline-danger" onclick="deleteServer(${s.id})"><i class="fas fa-trash"></i></button></td></tr>`;
+            });
+            document.getElementById('serverTableBody').innerHTML = html || '<tr><td colspan="10" class="text-center">暂无服务器</td></tr>';
+        }
+        
+        function renderPagination() {
+            const totalPages = Math.ceil(totalServers / pageSize);
+            if (totalPages <= 1) { document.getElementById('paginationList').innerHTML = ''; return; }
+            let html = `<li class="page-item ${currentPage === 1 ? 'disabled' : ''}"><a class="page-link" href="#" onclick="changePage(${currentPage-1})">上一页</a></li>`;
+            for (let i = 1; i <= Math.min(totalPages, 5); i++) { html += `<li class="page-item ${currentPage === i ? 'active' : ''}"><a class="page-link" href="#" onclick="changePage(${i})">${i}</a></li>`; }
+            if (currentPage < totalPages) html += `<li class="page-item"><a class="page-link" href="#" onclick="changePage(${currentPage+1})">下一页</a></li>`;
+            document.getElementById('paginationList').innerHTML = html;
+        }
+        
+        function changePage(page) { currentPage = page; renderTable(); renderPagination(); }
+        function escapeHtml(str) { if (!str) return '-'; return String(str).replace(/[&<>]/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[m])); }
+        
+        document.getElementById('addServerForm')?.addEventListener('submit', function(e) {
+            e.preventDefault();
+            fetch('/api/servers/', {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ hostname: document.getElementById('hostname').value, ip_address: document.getElementById('ip_address').value, ssh_port: parseInt(document.getElementById('ssh_port').value), ssh_user: document.getElementById('ssh_user').value, ssh_password: document.getElementById('ssh_password').value })
+            }).then(res => res.json()).then(data => {
+                alert(data.message);
+                if (data.code === 200) { document.getElementById('addServerForm').reset(); loadServers(); loadBaselineServerList(); loadAlertServerFilter(); }
+            });
+        });
+        
+        let searchTimeout;
+        document.getElementById('searchKeyword')?.addEventListener('input', function() {
+            clearTimeout(searchTimeout);
+            searchTimeout = setTimeout(() => { currentPage = 1; loadServers(); }, 500);
+        });
+        
+        function refreshServer(id) { fetch(`/api/servers/${id}/refresh/`, { method: 'POST' }).then(res => res.json()).then(data => { alert(data.message); loadServers(); }); }
+        function deleteServer(id) { if (confirm('确定删除？')) fetch(`/api/servers/${id}/`, { method: 'DELETE' }).then(res => res.json()).then(data => { alert(data.message); loadServers(); loadBaselineServerList(); loadAlertServerFilter(); }); }
+        
+        loadServers();
+        showPage('servers');
+    </script>
+</body>
+</html>
